@@ -32,6 +32,7 @@ const COMMON_ICONS = [
   { icon: "mdi:certificate", label: "证书" },
   { icon: "mdi:lightbulb", label: "技能" },
   { icon: "mdi:rocket", label: "项目" },
+  { icon: "mdi:folder-multiple", label: "项目经验" },
   { icon: "mdi:star", label: "荣誉" },
   { icon: "mdi:heart", label: "兴趣" },
   { icon: "mdi:account-group", label: "团队" },
