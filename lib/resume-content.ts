@@ -1,4 +1,4 @@
-import type { ModuleContentMode, ResumeModule } from "@/types/resume"
+import type { ModuleContentMode, ResumeEntry } from "@/types/resume"
 import { sanitizeHtml } from "@/lib/html-safety"
 import { renderMarkdown } from "@/lib/markdown"
 
@@ -6,7 +6,7 @@ export function normalizeContentMode(mode?: ModuleContentMode): ModuleContentMod
   return mode === "rich-text" ? "rich-text" : "markdown"
 }
 
-export function renderModuleContent(module: Pick<ResumeModule, "content" | "contentMode">): string {
+export function renderModuleContent(module: Pick<ResumeEntry, "content" | "contentMode">): string {
   if (!module.content) {
     return ""
   }

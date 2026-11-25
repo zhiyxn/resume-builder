@@ -1,5 +1,6 @@
 import type { ResumeData } from "@/types/resume"
 import { sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
+import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
 import {
   escapeHtml,
   formatPersonalInfoDisplay,
@@ -31,8 +32,7 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
     })
     .join("")
 
-  const modulesHtml = [...resumeData.modules]
-    .sort((a, b) => a.order - b.order)
+  const modulesHtml = normalizeResumeModules(resumeData.modules)
     .map((module) => {
       const iconBody = sanitizeSvgBody(module.icon)
       const iconHtml = iconBody
@@ -51,21 +51,23 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
               `
               : ""
           }
-          <div class="module-body">
+          ${getModuleEntries(module).map((entry) => `
+          <div class="module-body resume-entry">
             ${
-              module.subtitle || module.timeRange
+              entry.subtitle || entry.timeRange
                 ? `
                   <div class="module-meta">
-                    ${module.subtitle ? `<h3>${escapeHtml(module.subtitle)}</h3>` : "<span></span>"}
-                    ${module.timeRange ? `<span class="module-time">${escapeHtml(module.timeRange)}</span>` : ""}
+                    ${entry.subtitle ? `<h3>${escapeHtml(entry.subtitle)}</h3>` : "<span></span>"}
+                    ${entry.timeRange ? `<span class="module-time">${escapeHtml(entry.timeRange)}</span>` : ""}
                   </div>
                 `
                 : ""
             }
             <div class="module-content">
-              ${renderModuleContent(module)}
+              ${renderModuleContent(entry)}
             </div>
           </div>
+          `).join("")}
         </section>
       `
     })
@@ -205,6 +207,11 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
             border-bottom: 1px solid #e5e7eb;
             font-size: 18px;
             font-weight: 600;
+            break-after: avoid;
+          }
+
+          .resume-entry + .resume-entry {
+            margin-top: 16px;
           }
 
           .module-meta {
@@ -213,6 +220,7 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
             justify-content: space-between;
             gap: 16px;
             margin-bottom: 8px;
+            break-after: avoid;
           }
 
           .module-meta h3 {

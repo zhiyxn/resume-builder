@@ -7,15 +7,20 @@ export interface PersonalInfoItem {
 
 export type ModuleContentMode = "markdown" | "rich-text"
 
-export interface ResumeModule {
+export interface ResumeEntry {
   id: string
-  title: string
   subtitle?: string
   timeRange?: string
   content: string
   contentMode?: ModuleContentMode
+}
+
+export interface ResumeModule extends ResumeEntry {
+  title: string
   icon?: string
   order: number
+  // Absent on legacy files, whose entry fields lived directly on the module.
+  entries?: ResumeEntry[]
 }
 
 export interface ResumeData {

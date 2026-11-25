@@ -1,5 +1,18 @@
 import { z } from "zod"
 import { sanitizeHtml, sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
+import { normalizeResumeModules } from "@/lib/resume-modules"
+
+const entryFields = {
+  id: z.string().min(1).max(200),
+  subtitle: z.string().max(500).optional(),
+  timeRange: z.string().max(200).optional(),
+  content: z.string().max(200000).default(""),
+  contentMode: z.enum(["markdown", "rich-text"]).optional(),
+}
+const entrySchema = z.object(entryFields).transform((entry) => ({
+  ...entry,
+  content: entry.contentMode === "rich-text" ? sanitizeHtml(entry.content) : entry.content,
+}))
 
 // Cloud drafts may be incomplete. Export validation is applied separately.
 export const resumeSchema = z.object({
@@ -13,18 +26,15 @@ export const resumeSchema = z.object({
   avatar: z.string().max(4 * 1024 * 1024).optional().transform((v) => sanitizeUrl(v || "", { allowImages: true })),
   avatarShape: z.enum(["square", "circle"]).optional(),
   modules: z.array(z.object({
-    id: z.string().min(1).max(200),
+    ...entryFields,
     title: z.string().max(200),
-    subtitle: z.string().max(500).optional(),
-    timeRange: z.string().max(200).optional(),
-    content: z.string().max(200000),
-    contentMode: z.enum(["markdown", "rich-text"]).optional(),
     icon: z.string().max(20000).optional().transform(sanitizeSvgBody),
     order: z.number().int().min(0).max(1000),
+    entries: z.array(entrySchema).max(100).optional(),
   }).transform((module) => ({
     ...module,
     content: module.contentMode === "rich-text" ? sanitizeHtml(module.content) : module.content,
-  }))).max(100),
+  }))).max(100).transform(normalizeResumeModules),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })

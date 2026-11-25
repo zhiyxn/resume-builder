@@ -34,6 +34,7 @@ import { AccountMenu } from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
 import { CloudResumeControls } from "@/components/cloud-resume-controls";
 import { useCloudResume } from "@/hooks/use-cloud-resume";
+import { normalizeResumeModules } from "@/lib/resume-modules";
 
 type ViewMode = "both" | "edit-only" | "preview-only";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -99,7 +100,10 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
   const [hasGuestDraft, setHasGuestDraft] = useState(false);
   const { toast } = useToast();
   const loadCloudData = useCallback((resumeData: ResumeData) => {
-    setEditorState((previous) => ({ ...previous, resumeData }));
+    setEditorState((previous) => ({
+      ...previous,
+      resumeData: { ...resumeData, modules: normalizeResumeModules(resumeData.modules) },
+    }));
   }, []);
   const cloud = useCloudResume(
     user,

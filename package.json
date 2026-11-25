@@ -8,6 +8,7 @@
     "dev": "next dev",
     "lint": "npm run typecheck",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
     "db:check": "node scripts/database.mjs --check",
     "db:init": "node scripts/database.mjs --init",
     "start": "next start"
@@ -52,6 +53,7 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
+    "tsx": "^4.23.15",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }

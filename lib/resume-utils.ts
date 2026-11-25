@@ -2,9 +2,11 @@ import type {
   MagicyanFile,
   PersonalInfoItem,
   ResumeData,
+  ResumeEntry,
   ResumeModule,
 } from "@/types/resume"
 import { sanitizeHtml, sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
+import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
 
 function normalizePersonalInfoItem(item: PersonalInfoItem): PersonalInfoItem {
   return {
@@ -15,30 +17,38 @@ function normalizePersonalInfoItem(item: PersonalInfoItem): PersonalInfoItem {
   }
 }
 
-function normalizeModule(module: ResumeModule, order: number): ResumeModule {
-  const contentMode = module.contentMode === "rich-text" ? "rich-text" : "markdown"
-
-  return {
+function normalizeModules(modules: ResumeModule[]): ResumeModule[] {
+  return normalizeResumeModules(modules).map((module) => ({
     ...module,
-    subtitle: module.subtitle ?? "",
-    timeRange: module.timeRange ?? "",
-    content: contentMode === "rich-text" ? sanitizeHtml(module.content ?? "") : module.content ?? "",
-    contentMode,
     icon: sanitizeSvgBody(module.icon),
-    order,
-  }
+    entries: getModuleEntries(module).map((entry) => ({
+      ...entry,
+      subtitle: entry.subtitle ?? "",
+      timeRange: entry.timeRange ?? "",
+      content: entry.contentMode === "rich-text" ? sanitizeHtml(entry.content ?? "") : entry.content ?? "",
+      contentMode: entry.contentMode === "rich-text" ? "rich-text" : "markdown",
+    })),
+  }))
 }
 
-export function createNewModule(order: number): ResumeModule {
+export function createNewEntry(): ResumeEntry {
   return {
-    id: `module-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-    title: "新模块",
+    id: `entry-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
     subtitle: "",
     timeRange: "",
     content: "",
     contentMode: "markdown",
+  }
+}
+
+export function createNewModule(order: number, title = "新大块"): ResumeModule {
+  return {
+    id: `module-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+    title,
+    content: "",
     icon: "",
     order,
+    entries: [createNewEntry()],
   }
 }
 
@@ -78,18 +88,7 @@ export function createBlankResumeData(): ResumeData {
     ],
     avatar: "",
     avatarShape: "circle",
-    modules: [
-      {
-        id: `module-${Date.now()}-intro`,
-        title: "自我介绍",
-        subtitle: "",
-        timeRange: "",
-        content: "",
-        contentMode: "markdown",
-        icon: "",
-        order: 0,
-      },
-    ],
+    modules: [createNewModule(0, "自我介绍")],
     createdAt: now,
     updatedAt: now,
   }
@@ -97,18 +96,18 @@ export function createBlankResumeData(): ResumeData {
 
 export function exportToMagicyanFile(resumeData: ResumeData): string {
   const payload: MagicyanFile = {
-    version: "1.1.0",
+    version: "1.2.0",
     data: {
       ...resumeData,
       avatar: sanitizeUrl(resumeData.avatar || "", { allowImages: true }),
       avatarShape: resumeData.avatarShape === "square" ? "square" : "circle",
       personalInfo: resumeData.personalInfo.map(normalizePersonalInfoItem),
-      modules: resumeData.modules.map((module, index) => normalizeModule(module, index)),
+      modules: normalizeModules(resumeData.modules),
       updatedAt: new Date().toISOString(),
     },
     metadata: {
       exportedAt: new Date().toISOString(),
-      appVersion: "1.1.0",
+      appVersion: "1.2.0",
     },
   }
 
@@ -158,6 +157,14 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       if (!module.id || typeof module.title !== "string" || typeof module.order !== "number") {
         throw new Error("简历模块格式错误")
       }
+      if (module.entries !== undefined && (!Array.isArray(module.entries) || module.entries.some((entry) =>
+        !entry || typeof entry.id !== "string" || !entry.id || typeof entry.content !== "string" ||
+        (entry.subtitle !== undefined && typeof entry.subtitle !== "string") ||
+        (entry.timeRange !== undefined && typeof entry.timeRange !== "string") ||
+        (entry.contentMode !== undefined && !["markdown", "rich-text"].includes(entry.contentMode)),
+      ))) {
+        throw new Error("子模块格式错误")
+      }
     }
 
     const now = new Date().toISOString()
@@ -166,7 +173,7 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       avatar: sanitizeUrl(data.avatar || "", { allowImages: true }),
       avatarShape: data.avatarShape === "square" ? "square" : "circle",
       personalInfo: data.personalInfo.map(normalizePersonalInfoItem),
-      modules: data.modules.map((module, index) => normalizeModule(module, index)),
+      modules: normalizeModules(data.modules),
       createdAt: data.createdAt || now,
       updatedAt: now,
     }
@@ -223,6 +230,9 @@ export function validateResumeData(data: ResumeData): { isValid: boolean; errors
       if (!module.id || typeof module.title !== "string") {
         errors.push(`简历模块第 ${index + 1} 项格式错误`)
       }
+      if (module.entries !== undefined && (!Array.isArray(module.entries) || !module.entries.length)) {
+        errors.push(`简历大块「${module.title || `第 ${index + 1} 项`}」至少需要一个子模块`)
+      }
     })
   }
 
@@ -241,14 +251,16 @@ export function getResumeSuggestions(data: ResumeData): string[] {
     }
   })
 
-  data.modules.forEach((module, index) => {
-    if (!module.title?.trim() && !module.subtitle?.trim()) {
-      suggestions.push(`简历模块第 ${index + 1} 项缺少标题或副标题`)
+  normalizeResumeModules(data.modules).forEach((module, index) => {
+    const entries = getModuleEntries(module)
+    if (!module.title?.trim() && !entries.some((entry) => entry.subtitle?.trim())) {
+      suggestions.push(`简历大块第 ${index + 1} 项缺少标题或副标题`)
     }
-
-    if (!module.content?.trim()) {
-      suggestions.push(`简历模块「${module.title || module.subtitle || `第 ${index + 1} 项`}」尚未填写内容`)
-    }
+    entries.forEach((entry, entryIndex) => {
+      if (!entry.content?.trim()) {
+        suggestions.push(`「${module.title || `大块 ${index + 1}`} / ${entry.subtitle || `子模块 ${entryIndex + 1}`}」尚未填写内容`)
+      }
+    })
   })
 
   return suggestions
