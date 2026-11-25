@@ -9,6 +9,7 @@ import { sanitizeHtml, sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
 import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
 import { createContentRow } from "@/lib/content-rows"
 import { contentRowsSchema, personalInfoLayoutSchema, jobIntentionSchema } from "@/lib/content-schema"
+import { importUpstreamResume } from "@/lib/upstream-import"
 
 function normalizePersonalInfoItem(item: PersonalInfoItem): PersonalInfoItem {
   return {
@@ -139,8 +140,8 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       throw new Error("缺少简历数据")
     }
 
-    const data = parsed.data
-    if (!data.title || typeof data.title !== "string") {
+    const data = "personalInfoSection" in parsed.data ? importUpstreamResume(parsed.data) : parsed.data
+    if (typeof data.title !== "string") {
       throw new Error("简历标题格式错误")
     }
 
@@ -153,7 +154,7 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
     }
 
     for (const item of data.personalInfo) {
-      if (!item.id || !item.label || typeof item.value !== "string") {
+      if (!item.id || typeof item.label !== "string" || typeof item.value !== "string") {
         throw new Error("个人信息项格式错误")
       }
       if ((item.type !== undefined && !["text", "link"].includes(item.type)) ||

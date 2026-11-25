@@ -12,7 +12,9 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
   const safeAvatar = sanitizeUrl(resumeData.avatar || "", { allowImages: true })
   const titleLength = Array.from(resumeData.title || "").length
   const titleSizeClass = titleLength > 32 ? "resume-title-long" : titleLength > 20 ? "resume-title-medium" : ""
-  const avatarShapeClass = resumeData.avatarShape === "square" ? "avatar-square" : "avatar-circle"
+  const avatarShapeClass = resumeData.avatarType === "idPhoto" ? "avatar-id-photo" : resumeData.avatarShape === "square" ? "avatar-square" : "avatar-circle"
+  const avatarHtml = safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="头像" class="avatar ${avatarShapeClass}" />` : ""
+  const intentionHtml = resumeData.jobIntention?.enabled ? `<div class="job-intention">${resumeData.jobIntention.items.filter(item => item.value.trim()).map(item => `<div><span class="job-intention-label">${escapeHtml(item.label)}</span>${escapeHtml(item.value)}</div>`).join("")}</div>` : ""
 
   const personalInfoHtml = resumeData.personalInfo
     .map((item) => {
@@ -132,7 +134,7 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
 
           .resume-title {
             margin: 0 0 16px;
-            font-size: 28px;
+            font-size: 24px;
             line-height: 1.2;
             font-weight: 700;
             overflow-wrap: anywhere;
@@ -152,28 +154,32 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
             display: ${resumeData.personalInfoLayout?.mode === "inline" ? "flex" : "grid"};
             flex-wrap: wrap;
             grid-template-columns: repeat(${resumeData.personalInfoLayout?.columns || 2}, minmax(0, 1fr));
-            gap: 12px 40px;
+            gap: 8px 24px;
+            ${resumeData.personalInfoLayout?.mode === "inline" ? "background: #f5f6f8; padding: 8px 12px; border-radius: 4px;" : ""}
           }
 
           .personal-info-item {
             display: flex;
             align-items: start;
-            column-gap: 12px;
+            column-gap: 3px;
             min-width: 0;
             font-size: 14px;
           }
 
           .header-centered .resume-title { text-align: center; }
+          .resume-header.centered { flex-direction: column; align-items: center; gap: 16px; }
+          .resume-header.centered .header-content { width: 100%; }
+          .resume-header.centered .job-intention { justify-content: center; }
           .personal-info-value a { color: #0369a1; text-decoration: none; }
-          .job-intention { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 16px; font-size: 14px; }
+          .job-intention { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 12px; font-size: 14px; }
           .job-intention-label { color: #6b7280; margin-right: 6px; }
-          .resume-content-row { display: grid; gap: 16px; margin-bottom: 8px; }
+          .resume-content-row { display: grid; align-items: center; gap: 12px; margin-bottom: 8px; }
           .resume-cell { min-width: 0; }
           .resume-cell > :first-child { margin-top: 0; }
           .resume-cell > :last-child { margin-bottom: 0; }
           .resume-cell p:empty::after { content: "\\00a0"; }
           .resume-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-          .resume-tag { border: 1px solid #d1d5db; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #374151; background: #f9fafb; overflow-wrap: anywhere; }
+          .resume-tag { border: 1px solid #d1d5db; border-radius: 999px; padding: 2px 8px; font-size: 12px; color: #4b5563; overflow-wrap: anywhere; }
 
           .personal-info-label {
             color: #6b7280;
@@ -205,8 +211,9 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
           }
 
           .avatar-square {
-            border-radius: 6px;
+            border-radius: 0;
           }
+          .avatar-id-photo { width: 25mm; height: 35mm; border-radius: 0; }
 
           .resume-module {
             margin-bottom: 24px;
@@ -376,15 +383,16 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
       </head>
       <body>
         <main class="page">
-          <header class="resume-header">
+          <header class="resume-header${resumeData.centerTitle ? " centered" : ""}">
+            ${resumeData.centerTitle ? avatarHtml : ""}
             <div class="header-content ${resumeData.centerTitle ? "header-centered" : ""}">
               <h1 class="resume-title ${titleSizeClass}">${escapeHtml(resumeData.title || "简历标题")}</h1>
+              ${intentionHtml}
               <div class="personal-info">
                 ${personalInfoHtml}
               </div>
-              ${resumeData.jobIntention?.enabled ? `<div class="job-intention">${resumeData.jobIntention.items.filter(item => item.value.trim()).map(item => `<div><span class="job-intention-label">${escapeHtml(item.label)}</span>${escapeHtml(item.value)}</div>`).join("")}</div>` : ""}
             </div>
-            ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="头像" class="avatar ${avatarShapeClass}" />` : ""}
+            ${!resumeData.centerTitle ? avatarHtml : ""}
           </header>
           ${modulesHtml}
           ${

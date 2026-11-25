@@ -151,7 +151,7 @@
 /* 添加简历编辑器专用样式 */
 @layer components {
   .resume-editor {
-    @apply min-h-screen flex flex-col;
+    @apply h-dvh flex flex-col overflow-hidden;
   }
 
   .editor-toolbar {
@@ -175,11 +175,11 @@
   }
 
   .editor-content {
-    @apply flex-1 flex flex-col overflow-hidden lg:flex-row;
+    @apply min-h-0 flex-1 flex flex-col overflow-y-auto lg:flex-row lg:overflow-hidden;
   }
 
   .editor-panel {
-    @apply min-h-[50vh] flex-1 border-b bg-background overflow-y-auto lg:min-h-0 lg:border-b-0 lg:border-r;
+    @apply min-h-[50vh] min-w-0 flex-1 overflow-y-auto border-b bg-background lg:min-h-0 lg:border-b-0 lg:border-r;
   }
 
   .preview-panel {
@@ -195,7 +195,7 @@
   }
 
   .section-header {
-    @apply flex items-center justify-between mb-3;
+    @apply flex flex-wrap items-center justify-between gap-3 mb-3;
   }
 
   .section-title {
@@ -355,4 +355,118 @@
   .module-content a:hover {
     text-decoration: underline !important;
   }
+}
+
+/* Editor typography adapted from wzdnzd/resume. */
+/* Tiptap Editor Styles */
+
+/* Basic editor styling */
+.rt-editor.ProseMirror {
+  outline: none;
+  min-height: 40px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: inherit;
+}
+
+/* Placeholder */
+.rt-editor.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Code styling */
+.rt-editor.ProseMirror code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: inherit;
+  background-color: #f6f8fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #e1e4e8;
+}
+
+/* List styling */
+.rt-editor.ProseMirror ul,
+.rt-editor.ProseMirror ol {
+  padding-left: 1.5rem !important;
+  margin: 0 !important;
+  list-style-position: outside !important;
+}
+
+.rt-editor.ProseMirror ul {
+  list-style-type: disc !important;
+}
+
+.rt-editor.ProseMirror ol {
+  list-style-type: decimal !important;
+}
+
+.rt-editor.ProseMirror li {
+  margin: 0 !important;
+  display: list-item !important;
+  list-style: inherit !important;
+}
+
+.rt-editor.ProseMirror li p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+/* Nested lists */
+.rt-editor.ProseMirror ul ul,
+.rt-editor.ProseMirror ol ul {
+  list-style-type: circle !important;
+}
+
+.rt-editor.ProseMirror ul ul ul,
+.rt-editor.ProseMirror ol ul ul,
+.rt-editor.ProseMirror ol ol ul,
+.rt-editor.ProseMirror ul ol ul {
+  list-style-type: square !important;
+}
+
+/* Remove default paragraph margins for inline content */
+.rt-editor.ProseMirror p {
+  margin: 0;
+}
+
+/* Selection styling */
+.rt-editor.ProseMirror ::selection {
+  background-color: #b3d4fc;
+}
+
+/* Focus styling */
+.rt-editor.ProseMirror:focus {
+  outline: none;
+}
+
+/* Underline styling */
+.rt-editor.ProseMirror u {
+  text-decoration: underline;
+}
+
+/* Read-only mode (for preview) */
+.rt-editor.ProseMirror[contenteditable="false"] {
+  cursor: default;
+}
+
+
+.rt-editor.ProseMirror { overflow-wrap: anywhere; }
+.rt-editor.ProseMirror > p { margin-bottom: 6px; }
+.rt-editor.ProseMirror > :last-child { margin-bottom: 0; }
+.rt-editor.ProseMirror p:only-child:empty::before { content: attr(data-placeholder); color: #94a3b8; }
+@media (hover: none) { .row-action-bar { opacity: 1; } }
+
+@media (max-width: 639px) {
+  .personal-info-fields { display: grid; grid-template-columns: minmax(0, 1fr) 60px 64px; }
+  .personal-info-fields > :first-child { min-width: 0; max-width: none; }
+  .personal-info-fields > :nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+  .job-intention-fields { display: grid; grid-template-columns: 32px minmax(0, 1fr) 64px; }
+  .job-intention-fields > :nth-child(2) { min-width: 0; max-width: none; }
+  .job-intention-fields > :nth-child(3) { grid-column: 2 / -1; grid-row: 2; }
+  .job-intention-fields > :nth-child(4) { grid-column: 3; grid-row: 1; }
 }

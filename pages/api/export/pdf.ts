@@ -10,6 +10,7 @@ import { getApiUser } from "@/lib/server/auth"
 import { guestId, requestFingerprint, requestIpHash } from "@/lib/server/guest"
 import { reserveExport, completeExport, failExport } from "@/lib/server/export-quota"
 import { resumeSchema } from "@/lib/server/resume-schema"
+import { RESUME_FONT_FAMILIES } from "@/lib/html-safety"
 import { readShare } from "@/lib/server/resumes"
 
 export const config = {
@@ -62,7 +63,7 @@ function getEmbeddedFontStyle() {
         font-family: "ResumeCJK", "Noto Sans SC", "Microsoft YaHei", sans-serif !important;
       }
 
-      ${["Arial", "SimSun", "serif", "sans-serif", "monospace", "Noto Sans SC"].map((family) => `
+      ${RESUME_FONT_FAMILIES.map((family) => `
       body [style*="font-family: ${family}"] {
         font-family: ${family === "Noto Sans SC" ? '"ResumeCJK"' : family}, "ResumeCJK", sans-serif !important;
       }`).join("")}

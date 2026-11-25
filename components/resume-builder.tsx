@@ -3,11 +3,10 @@
 import type React from "react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
+import { Columns2, Eye, FilePenLine, Pencil } from "lucide-react";
 import HtmlResumePreview from "@/components/html-resume-preview";
-import ModuleEditor from "@/components/module-editor";
+import ResumeFields from "@/components/editor/resume-fields";
 import PDFExportButton from "@/components/pdf-export-button";
-import PersonalInfoEditor from "@/components/personal-info-editor";
-import JobIntentionEditor from "@/components/job-intention-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -53,10 +52,10 @@ const ViewModeSelector = memo(function ViewModeSelector({
     {
       key: "both" as ViewMode,
       label: "编辑 + 预览",
-      icon: "mdi:view-split-vertical",
+      icon: Columns2,
     },
-    { key: "edit-only" as ViewMode, label: "仅编辑", icon: "mdi:pencil" },
-    { key: "preview-only" as ViewMode, label: "仅预览", icon: "mdi:eye" },
+    { key: "edit-only" as ViewMode, label: "仅编辑", icon: Pencil },
+    { key: "preview-only" as ViewMode, label: "仅预览", icon: Eye },
   ];
 
   return (
@@ -65,13 +64,16 @@ const ViewModeSelector = memo(function ViewModeSelector({
         <button
           key={mode.key}
           onClick={() => onViewModeChange(mode.key)}
+          aria-label={mode.label}
+          aria-pressed={viewMode === mode.key}
+          title={mode.label}
           className={`relative flex min-w-[84px] items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200 sm:min-w-[100px] ${
             viewMode === mode.key
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Icon icon={mode.icon} className="h-4 w-4" />
+          <mode.icon className="h-4 w-4" />
           <span className="hidden sm:inline">{mode.label}</span>
         </button>
       ))}
@@ -292,10 +294,10 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
       return;
     }
 
-    if (!file.name.endsWith(".magicyan")) {
+    if (!/\.(magicyan|json)$/i.test(file.name)) {
       toast({
         title: "文件格式错误",
-        description: "请选择 .magicyan 格式文件。",
+        description: "请选择 .magicyan 或上游项目的 .json 简历文件。",
         variant: "destructive",
       });
       event.target.value = "";
@@ -387,10 +389,7 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
       <header className="editor-toolbar">
         <div className="toolbar-title">
           <div className="flex min-w-0 items-center gap-2">
-            <Icon
-              icon="mdi:file-document-edit"
-              className="h-6 w-6 text-primary"
-            />
+            <FilePenLine className="h-6 w-6 shrink-0 text-primary" />
             <h1 className="sr-only whitespace-nowrap text-lg font-semibold md:not-sr-only">
               简历生成器
             </h1>
@@ -420,7 +419,7 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
 
           <input
             type="file"
-            accept=".magicyan"
+            accept=".magicyan,.json"
             onChange={handleImport}
             className="hidden"
             id="import-file"
@@ -590,12 +589,16 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
             <div className="space-y-6 p-6">
               <Card className="p-4">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      icon="mdi:format-title"
-                      className="h-5 w-5 text-primary"
-                    />
-                    <h2 className="font-medium">简历标题</h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Icon icon="mdi:format-title" className="h-5 w-5 text-primary" />
+                      <h2 className="font-medium">简历标题</h2>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-2 bg-transparent"
+                      onClick={() => updateResumeData({ centerTitle: !editorState.resumeData.centerTitle })}>
+                      <Icon icon={editorState.resumeData.centerTitle ? "mdi:format-align-center" : "mdi:format-align-left"} className="h-4 w-4" />
+                      {editorState.resumeData.centerTitle ? "居中显示" : "左对齐"}
+                    </Button>
                   </div>
                   <Input
                     value={editorState.resumeData.title}
@@ -606,32 +609,10 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
                     placeholder="请输入简历标题或姓名"
                     className="text-lg font-medium"
                   />
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <input type="checkbox" checked={editorState.resumeData.centerTitle || false}
-                      onChange={(event) => updateResumeData({ centerTitle: event.target.checked })} />
-                    标题居中
-                  </label>
                 </div>
               </Card>
 
-              <PersonalInfoEditor
-                personalInfo={editorState.resumeData.personalInfo}
-                avatar={editorState.resumeData.avatar}
-                avatarShape={editorState.resumeData.avatarShape}
-                layout={editorState.resumeData.personalInfoLayout}
-                onLayoutChange={(personalInfoLayout) => updateResumeData({ personalInfoLayout })}
-                onUpdate={(personalInfo, avatar, avatarShape) =>
-                  updateResumeData({ personalInfo, avatar, avatarShape })
-                }
-              />
-
-              <JobIntentionEditor value={editorState.resumeData.jobIntention}
-                onChange={(jobIntention) => updateResumeData({ jobIntention })} />
-
-              <ModuleEditor
-                modules={editorState.resumeData.modules}
-                onUpdate={(modules) => updateResumeData({ modules })}
-              />
+              <ResumeFields data={editorState.resumeData} onChange={updateResumeData} />
             </div>
           </div>
         )}

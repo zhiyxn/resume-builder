@@ -29,6 +29,7 @@ export const resumeSchema = z.object({
   })).max(50),
   avatar: z.string().max(4 * 1024 * 1024).optional().transform((v) => sanitizeUrl(v || "", { allowImages: true })),
   avatarShape: z.enum(["square", "circle"]).optional(),
+  avatarType: z.enum(["default", "idPhoto"]).optional(),
   centerTitle: z.boolean().optional(),
   personalInfoLayout: personalInfoLayoutSchema.optional(),
   jobIntention: jobIntentionSchema.optional(),

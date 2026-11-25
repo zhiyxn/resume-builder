@@ -63,6 +63,11 @@ export const jobIntentionSchema = z.object({
         id: z.string().min(1).max(200),
         label: z.string().max(100),
         value: z.string().max(500),
+        type: z.enum(["workYears", "position", "city", "salary", "custom"]).optional(),
+        salaryRange: z.object({
+          min: z.number().int().positive().max(100000).optional(),
+          max: z.number().int().positive().max(100000).optional(),
+        }).optional(),
       }),
     )
     .max(20),

@@ -17,6 +17,8 @@ export interface JobIntentionItem {
   id: string
   label: string
   value: string
+  type?: "workYears" | "position" | "city" | "salary" | "custom"
+  salaryRange?: { min?: number; max?: number }
 }
 
 export interface ResumeContentRow {
@@ -52,6 +54,7 @@ export interface ResumeData {
   modules: ResumeModule[]
   avatar?: string
   avatarShape?: "square" | "circle"
+  avatarType?: "default" | "idPhoto"
   centerTitle?: boolean
   personalInfoLayout?: PersonalInfoLayout
   jobIntention?: { enabled: boolean; items: JobIntentionItem[] }

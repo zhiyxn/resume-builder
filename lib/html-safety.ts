@@ -1,3 +1,10 @@
+export const RESUME_FONT_FAMILIES = [
+  "Noto Sans SC", "Microsoft YaHei", "SimSun", "SimHei", "KaiTi", "FangSong",
+  "PingFang SC", "Heiti SC", "STSong", "STKaiti", "STFangsong", "Arial",
+  "Times New Roman", "Calibri", "Georgia", "Verdana", "Courier New", "Consolas",
+  "Monaco", "sans-serif", "serif", "monospace",
+] as const
+
 const HTML_ALLOWED_TAGS = new Set([
   "a",
   "b",
@@ -184,8 +191,8 @@ export function sanitizeTextStyle(value: string): string {
     const allowed =
       (name === "text-align" && /^(left|center|right|justify)$/.test(content)) ||
       (["color", "background-color"].includes(name) && /^(#[a-fA-F0-9]{3,8}|rgba?\([\d\s,.%]+\))$/.test(content)) ||
-      (name === "font-size" && /^(?:[8-9]|[1-6]\d|7[0-2])(?:\.\d+)?px$/.test(content)) ||
-      (name === "font-family" && /^(Noto Sans SC|Arial|SimSun|sans-serif|serif|monospace)$/.test(content)) ||
+      (name === "font-size" && /^(?:[8-9]|[1-6]\d|7[0-2])(?:\.\d+)?(?:px|pt)$/.test(content)) ||
+      (name === "font-family" && (RESUME_FONT_FAMILIES as readonly string[]).includes(content)) ||
       (name === "line-height" && /^(1(?:\.\d+)?|2(?:\.\d+)?|3)$/.test(content))
     return allowed ? [`${name}: ${content}`] : []
   }).join("; ")
