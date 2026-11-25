@@ -1,6 +1,7 @@
 import type { ResumeData } from "@/types/resume"
 import { sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
 import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
+import { renderContentRows } from "@/lib/content-rows"
 import {
   escapeHtml,
   formatPersonalInfoDisplay,
@@ -23,10 +24,10 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
       return `
         <div class="personal-info-item">
           ${iconHtml}
-          <span class="personal-info-label">${escapeHtml(item.label)}:</span>
-          <span class="personal-info-value">${escapeHtml(
-            formatPersonalInfoDisplay(item.label, item.value || "未填写"),
-          )}</span>
+          ${resumeData.personalInfoLayout?.showLabels !== false ? `<span class="personal-info-label">${escapeHtml(item.label)}:</span>` : ""}
+          <span class="personal-info-value">${item.type === "link" && sanitizeUrl(item.value)
+            ? `<a href="${escapeHtml(sanitizeUrl(item.value))}" rel="noreferrer noopener">${escapeHtml(item.linkTitle || item.value)}</a>`
+            : escapeHtml(formatPersonalInfoDisplay(item.label, item.value || "未填写"))}</span>
         </div>
       `
     })
@@ -53,6 +54,7 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
           }
           ${getModuleEntries(module).map((entry) => `
           <div class="module-body resume-entry">
+            ${entry.rows ? renderContentRows(entry.rows) : `
             ${
               entry.subtitle || entry.timeRange
                 ? `
@@ -66,6 +68,7 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
             <div class="module-content">
               ${renderModuleContent(entry)}
             </div>
+            `}
           </div>
           `).join("")}
         </section>
@@ -146,19 +149,31 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
           }
 
           .personal-info {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: ${resumeData.personalInfoLayout?.mode === "inline" ? "flex" : "grid"};
+            flex-wrap: wrap;
+            grid-template-columns: repeat(${resumeData.personalInfoLayout?.columns || 2}, minmax(0, 1fr));
             gap: 12px 40px;
           }
 
           .personal-info-item {
-            display: grid;
-            grid-template-columns: 16px auto minmax(0, 1fr);
+            display: flex;
             align-items: start;
             column-gap: 12px;
             min-width: 0;
             font-size: 14px;
           }
+
+          .header-centered .resume-title { text-align: center; }
+          .personal-info-value a { color: #0369a1; text-decoration: none; }
+          .job-intention { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 16px; font-size: 14px; }
+          .job-intention-label { color: #6b7280; margin-right: 6px; }
+          .resume-content-row { display: grid; gap: 16px; margin-bottom: 8px; }
+          .resume-cell { min-width: 0; }
+          .resume-cell > :first-child { margin-top: 0; }
+          .resume-cell > :last-child { margin-bottom: 0; }
+          .resume-cell p:empty::after { content: "\\00a0"; }
+          .resume-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+          .resume-tag { border: 1px solid #d1d5db; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #374151; background: #f9fafb; overflow-wrap: anywhere; }
 
           .personal-info-label {
             color: #6b7280;
@@ -362,11 +377,12 @@ export function buildResumeHtml(resumeData: ResumeData, { embedded = false }: { 
       <body>
         <main class="page">
           <header class="resume-header">
-            <div class="header-content">
+            <div class="header-content ${resumeData.centerTitle ? "header-centered" : ""}">
               <h1 class="resume-title ${titleSizeClass}">${escapeHtml(resumeData.title || "简历标题")}</h1>
               <div class="personal-info">
                 ${personalInfoHtml}
               </div>
+              ${resumeData.jobIntention?.enabled ? `<div class="job-intention">${resumeData.jobIntention.items.filter(item => item.value.trim()).map(item => `<div><span class="job-intention-label">${escapeHtml(item.label)}</span>${escapeHtml(item.value)}</div>`).join("")}</div>` : ""}
             </div>
             ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="头像" class="avatar ${avatarShapeClass}" />` : ""}
           </header>

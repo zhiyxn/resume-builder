@@ -58,10 +58,14 @@ function getEmbeddedFontStyle() {
       }
 
       html,
-      body,
-      body *:not(code):not(pre) {
+      body {
         font-family: "ResumeCJK", "Noto Sans SC", "Microsoft YaHei", sans-serif !important;
       }
+
+      ${["Arial", "SimSun", "serif", "sans-serif", "monospace", "Noto Sans SC"].map((family) => `
+      body [style*="font-family: ${family}"] {
+        font-family: ${family === "Noto Sans SC" ? '"ResumeCJK"' : family}, "ResumeCJK", sans-serif !important;
+      }`).join("")}
 
       code,
       pre,

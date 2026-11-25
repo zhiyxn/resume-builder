@@ -7,6 +7,7 @@ import HtmlResumePreview from "@/components/html-resume-preview";
 import ModuleEditor from "@/components/module-editor";
 import PDFExportButton from "@/components/pdf-export-button";
 import PersonalInfoEditor from "@/components/personal-info-editor";
+import JobIntentionEditor from "@/components/job-intention-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -605,6 +606,11 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
                     placeholder="请输入简历标题或姓名"
                     className="text-lg font-medium"
                   />
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input type="checkbox" checked={editorState.resumeData.centerTitle || false}
+                      onChange={(event) => updateResumeData({ centerTitle: event.target.checked })} />
+                    标题居中
+                  </label>
                 </div>
               </Card>
 
@@ -612,10 +618,15 @@ export default function ResumeBuilder({ user }: { user: AccountUser | null }) {
                 personalInfo={editorState.resumeData.personalInfo}
                 avatar={editorState.resumeData.avatar}
                 avatarShape={editorState.resumeData.avatarShape}
+                layout={editorState.resumeData.personalInfoLayout}
+                onLayoutChange={(personalInfoLayout) => updateResumeData({ personalInfoLayout })}
                 onUpdate={(personalInfo, avatar, avatarShape) =>
                   updateResumeData({ personalInfo, avatar, avatarShape })
                 }
               />
+
+              <JobIntentionEditor value={editorState.resumeData.jobIntention}
+                onChange={(jobIntention) => updateResumeData({ jobIntention })} />
 
               <ModuleEditor
                 modules={editorState.resumeData.modules}

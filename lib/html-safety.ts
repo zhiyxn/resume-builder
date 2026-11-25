@@ -80,11 +80,20 @@ function parseAttributes(rawAttributes: string) {
   while ((match = attributePattern.exec(rawAttributes)) !== null) {
     attributes.push({
       name: match[1].toLowerCase(),
-      value: match[2] ?? match[3] ?? match[4] ?? "",
+      value: decodeAttribute(match[2] ?? match[3] ?? match[4] ?? ""),
     })
   }
 
   return attributes
+}
+
+function decodeAttribute(value: string): string {
+  const entities: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", colon: ":", Tab: "\t", NewLine: "\n" }
+  return value.replace(/&(#x[0-9a-f]+|#\d+|amp|quot|apos|lt|gt|colon|Tab|NewLine);/gi, (entity, name: string) => {
+    if (!name.startsWith("#")) return entities[name] ?? entity
+    const point = name[1].toLowerCase() === "x" ? Number.parseInt(name.slice(2), 16) : Number.parseInt(name.slice(1), 10)
+    return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : ""
+  })
 }
 
 function escapeAttribute(value: string) {
@@ -126,7 +135,13 @@ function sanitizeHtmlAttributes(tagName: string, rawAttributes: string) {
   const safeAttributes: string[] = []
 
   for (const { name, value } of attributes) {
-    if (name.startsWith("on") || name === "style" || name === "srcdoc") {
+    if (name.startsWith("on") || name === "srcdoc") {
+      continue
+    }
+
+    if (name === "style") {
+      const style = sanitizeTextStyle(value)
+      if (style) safeAttributes.push(`style="${escapeAttribute(style)}"`)
       continue
     }
 
@@ -158,6 +173,22 @@ function sanitizeHtmlAttributes(tagName: string, rawAttributes: string) {
   }
 
   return safeAttributes.length ? ` ${safeAttributes.join(" ")}` : ""
+}
+
+// Keep only text formatting used by the editor; layout, URLs and positioning are excluded.
+export function sanitizeTextStyle(value: string): string {
+  return value.split(";").flatMap((declaration) => {
+    const separator = declaration.indexOf(":")
+    const name = declaration.slice(0, separator).trim().toLowerCase()
+    const content = declaration.slice(separator + 1).trim().replace(/&quot;|&#34;|&#39;/g, "").replace(/["']/g, "")
+    const allowed =
+      (name === "text-align" && /^(left|center|right|justify)$/.test(content)) ||
+      (["color", "background-color"].includes(name) && /^(#[a-fA-F0-9]{3,8}|rgba?\([\d\s,.%]+\))$/.test(content)) ||
+      (name === "font-size" && /^(?:[8-9]|[1-6]\d|7[0-2])(?:\.\d+)?px$/.test(content)) ||
+      (name === "font-family" && /^(Noto Sans SC|Arial|SimSun|sans-serif|serif|monospace)$/.test(content)) ||
+      (name === "line-height" && /^(1(?:\.\d+)?|2(?:\.\d+)?|3)$/.test(content))
+    return allowed ? [`${name}: ${content}`] : []
+  }).join("; ")
 }
 
 export function sanitizeHtml(value: string) {

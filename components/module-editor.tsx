@@ -6,6 +6,10 @@ import { DragDropContext, Draggable, Droppable, type DropResult, type DraggableP
 import { Icon } from "@iconify/react"
 import IconPicker from "@/components/icon-picker"
 import RichTextEditor from "@/components/rich-text-editor"
+import ContentRowsEditor from "@/components/content-rows-editor"
+import { RichTextProvider } from "@/components/rich-text-context"
+import RichTextToolbar from "@/components/rich-text-toolbar"
+import { entryLabel, getEntryRows } from "@/lib/content-rows"
 import { sanitizeSvgBody } from "@/lib/html-safety"
 import { renderModuleContent } from "@/lib/resume-content"
 import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
@@ -66,7 +70,7 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
   }
 
   return (
-    <Card className="section-card">
+    <RichTextProvider><Card className="section-card">
       <div className="section-header">
         <div className="flex items-center gap-2">
           <Icon icon="mdi:view-module" className="h-5 w-5 text-primary" />
@@ -87,6 +91,7 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
         </div>
       </div>
 
+      <RichTextToolbar />
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="modules-list">
           {(provided) => (
@@ -111,7 +116,7 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
           )}
         </Droppable>
       </DragDropContext>
-    </Card>
+    </Card></RichTextProvider>
   )
 }
 
@@ -209,7 +214,9 @@ interface EntryEditorProps {
 }
 
 function EntryEditor({ entry, index, count, onUpdate, onMove, onRemove }: EntryEditorProps) {
-  const [expanded, setExpanded] = useState(index === 0 || (!entry.subtitle && !entry.content))
+  const [expanded, setExpanded] = useState(index === 0 || (entry.rows
+    ? entry.rows.every(row => !row.tags.length && row.cells.every(cell => !cell.content))
+    : !entry.subtitle && !entry.content))
   const contentMode = entry.contentMode === "rich-text" ? "rich-text" : "markdown"
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded} className="rounded-lg border bg-background">
@@ -217,7 +224,7 @@ function EntryEditor({ entry, index, count, onUpdate, onMove, onRemove }: EntryE
         <CollapsibleTrigger asChild>
           <button type="button" className="flex min-w-0 flex-1 items-center gap-2 py-3 text-left text-sm">
             <Icon icon={expanded ? "mdi:chevron-down" : "mdi:chevron-right"} className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="truncate font-medium">{entry.subtitle || `子模块 ${index + 1}`}</span>
+            <span className="truncate font-medium">{entryLabel(entry, index)}</span>
           </button>
         </CollapsibleTrigger>
         <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" disabled={index === 0} onClick={() => onMove(-1)} aria-label="上移子模块"><Icon icon="mdi:arrow-up" className="h-4 w-4" /></Button>
@@ -226,6 +233,10 @@ function EntryEditor({ entry, index, count, onUpdate, onMove, onRemove }: EntryE
       </div>
       <CollapsibleContent>
         <div className="space-y-4 border-t p-3">
+          {entry.rows ? <ContentRowsEditor rows={entry.rows} onChange={(rows) => onUpdate({ rows })} /> : <>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => onUpdate({ rows: getEntryRows(entry) })}>
+            <Icon icon="mdi:view-column-outline" className="h-4 w-4" />转换为自由排版
+          </Button>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="form-group">
               <Label htmlFor={`entry-subtitle-${entry.id}`} className="form-label">副标题</Label>
@@ -254,6 +265,7 @@ function EntryEditor({ entry, index, count, onUpdate, onMove, onRemove }: EntryE
               <RichTextEditor value={entry.content || ""} onChange={(value) => onUpdate({ content: value })} placeholder="填写这条经历的详细内容。" />
             )}
           </div>
+          </>}
         </div>
       </CollapsibleContent>
     </Collapsible>

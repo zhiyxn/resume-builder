@@ -1,75 +1,63 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { Icon } from "@iconify/react"
-import { Button } from "@/components/ui/button"
+import { useEffect } from "react"
+import { useEditor, EditorContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import TextAlign from "@tiptap/extension-text-align"
+import { TextStyleKit } from "@tiptap/extension-text-style"
+import { sanitizeHtml } from "@/lib/html-safety"
+import { useRichTextContext } from "@/components/rich-text-context"
 
 interface RichTextEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  label?: string
 }
 
-const toolbarItems = [
-  { icon: "mdi:format-bold", command: "bold", value: undefined, label: "加粗" },
-  { icon: "mdi:format-italic", command: "italic", value: undefined, label: "斜体" },
-  { icon: "mdi:format-list-bulleted", command: "insertUnorderedList", value: undefined, label: "无序列表" },
-  { icon: "mdi:format-list-numbered", command: "insertOrderedList", value: undefined, label: "有序列表" },
-  { icon: "mdi:format-quote-close", command: "formatBlock", value: "blockquote", label: "引用" },
-  { icon: "mdi:code-tags", command: "formatBlock", value: "pre", label: "代码块" },
-] as const
-
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
+export default function RichTextEditor({
+  value,
+  onChange,
+  placeholder = "输入内容…",
+  label = "富文本内容",
+}: RichTextEditorProps) {
+  const context = useRichTextContext()
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({
+        trailingNode: false,
+        link: { openOnClick: false },
+      }),
+      TextStyleKit,
+      TextAlign.configure({ types: ["paragraph", "heading"] }),
+    ],
+    content: sanitizeHtml(value),
+    editorProps: {
+      attributes: {
+        class: "resume-rich-editor",
+        role: "textbox",
+        "aria-label": label,
+        "aria-multiline": "true",
+        "data-placeholder": placeholder,
+      },
+      transformPastedHTML: sanitizeHtml,
+    },
+    onFocus: ({ editor }) => context?.activate(editor),
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  })
 
   useEffect(() => {
-    const editor = editorRef.current
-    if (editor && editor.innerHTML !== value) {
-      editor.innerHTML = value || ""
+    if (editor && editor.getHTML() !== value)
+      editor.commands.setContent(sanitizeHtml(value), { emitUpdate: false })
+  }, [editor, value])
+
+  useEffect(() => {
+    if (!editor) return
+    return () => {
+      context?.deactivate(editor)
     }
-  }, [value])
+  }, [editor, context?.deactivate])
 
-  const runCommand = (command: string, commandValue?: string) => {
-    const editor = editorRef.current
-    if (!editor) {
-      return
-    }
-
-    editor.focus()
-    document.execCommand(command, false, commandValue)
-    onChange(editor.innerHTML)
-  }
-
-  return (
-    <div className="overflow-hidden rounded-lg border bg-background">
-      <div className="flex flex-wrap gap-1 border-b bg-muted/40 p-2">
-        {toolbarItems.map((item) => (
-          <Button
-            key={`${item.command}-${item.label}`}
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2"
-            onClick={() => runCommand(item.command, item.value)}
-          >
-            <Icon icon={item.icon} className="h-4 w-4" />
-            <span className="sr-only">{item.label}</span>
-          </Button>
-        ))}
-        <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={() => runCommand("removeFormat")}>
-          <Icon icon="mdi:format-clear" className="h-4 w-4" />
-          <span className="sr-only">清除格式</span>
-        </Button>
-      </div>
-
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        data-placeholder={placeholder}
-        className="min-h-[220px] px-4 py-3 text-sm leading-6 outline-none [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5 empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
-        onInput={(event) => onChange(event.currentTarget.innerHTML)}
-      />
-    </div>
-  )
+  return <EditorContent editor={editor} className="min-w-0" />
 }

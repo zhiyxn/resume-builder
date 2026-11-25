@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import type { PersonalInfoItem, ResumeData } from "@/types/resume"
+import type { PersonalInfoItem, PersonalInfoLayout, ResumeData } from "@/types/resume"
 import { sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
 import { createNewPersonalInfoItem } from "@/lib/resume-utils"
 import IconPicker from "./icon-picker"
@@ -18,12 +18,14 @@ interface PersonalInfoEditorProps {
   personalInfo: PersonalInfoItem[]
   avatar?: string
   avatarShape?: AvatarShape
+  layout?: PersonalInfoLayout
+  onLayoutChange: (layout: PersonalInfoLayout) => void
   onUpdate: (personalInfo: PersonalInfoItem[], avatar?: string, avatarShape?: AvatarShape) => void
 }
 
 const CROP_SIZE = 280
 
-export default function PersonalInfoEditor({ personalInfo, avatar, avatarShape = "circle", onUpdate }: PersonalInfoEditorProps) {
+export default function PersonalInfoEditor({ personalInfo, avatar, avatarShape = "circle", onUpdate, layout = {mode: "grid", columns: 2, showLabels: true}, onLayoutChange }: PersonalInfoEditorProps) {
   const [avatarUrl, setAvatarUrl] = useState(avatar || "")
   const [shape, setShape] = useState<AvatarShape>(avatarShape)
   const [cropOpen, setCropOpen] = useState(false)
@@ -100,6 +102,11 @@ export default function PersonalInfoEditor({ personalInfo, avatar, avatarShape =
       </div>
 
       <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 p-3 text-xs">
+          <label className="flex items-center gap-2">信息布局<select aria-label="个人信息布局" value={layout.mode} onChange={event => onLayoutChange({...layout, mode: event.target.value as PersonalInfoLayout["mode"]})} className="h-8 rounded border bg-background px-2"><option value="inline">行内紧凑</option><option value="grid">网格排列</option></select></label>
+          {layout.mode === "grid" && <label className="flex items-center gap-2">每行<select aria-label="个人信息列数" value={layout.columns} onChange={event => onLayoutChange({...layout, columns: Number(event.target.value) as PersonalInfoLayout["columns"]})} className="h-8 rounded border bg-background px-2">{[1,2,3,4,5,6].map(columns => <option key={columns} value={columns}>{columns} 项</option>)}</select></label>}
+          <label className="flex items-center gap-2"><input type="checkbox" checked={layout.showLabels} onChange={event => onLayoutChange({...layout, showLabels:event.target.checked})} />显示标签</label>
+        </div>
         <div className="form-group">
           <Label className="form-label">头像</Label>
           <div className="flex items-center gap-4 rounded-xl bg-muted/40 p-3">
@@ -154,7 +161,13 @@ function PersonalInfoItemEditor({ item, onUpdate, onRemove }: PersonalInfoItemEd
   const iconBody = sanitizeSvgBody(item.icon)
   return <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3">
     <Dialog><DialogTrigger asChild><Button variant="outline" size="sm" className="icon-button bg-transparent">{iconBody && <svg width={24} height={24} viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: iconBody }} />}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>选择图标</DialogTitle></DialogHeader><IconPicker selectedIcon={item.icon} onSelect={(icon) => onUpdate({ icon })} /></DialogContent></Dialog>
-    <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2"><div><Label className="text-xs text-muted-foreground">标签</Label><Input value={item.label} onChange={(event) => onUpdate({ label: event.target.value })} placeholder="如：电话、邮箱" className="h-8" /></div><div><Label className="text-xs text-muted-foreground">内容</Label><Input value={item.value} onChange={(event) => onUpdate({ value: event.target.value })} placeholder="请输入对应内容" className="h-8" /></div></div>
+    <div className="min-w-0 flex-1 space-y-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div><Label htmlFor={`info-label-${item.id}`} className="text-xs text-muted-foreground">标签</Label><Input id={`info-label-${item.id}`} value={item.label} onChange={(event) => onUpdate({ label: event.target.value })} maxLength={100} placeholder="如：电话、邮箱" className="h-8" /></div><div><Label htmlFor={`info-value-${item.id}`} className="text-xs text-muted-foreground">{item.type === "link" ? "链接地址" : "内容"}</Label><Input id={`info-value-${item.id}`} value={item.value} onChange={(event) => onUpdate({ value: event.target.value })} maxLength={2000} placeholder="请输入对应内容" className="h-8" /></div></div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select aria-label={`${item.label}内容类型`} value={item.type || "text"} onChange={event => onUpdate({type:event.target.value as "text" | "link"})} className="h-8 rounded border bg-background px-2 text-xs"><option value="text">普通文本</option><option value="link">链接</option></select>
+        {item.type === "link" && <Input aria-label={`${item.label}链接显示文字`} value={item.linkTitle || ""} onChange={event => onUpdate({linkTitle:event.target.value})} maxLength={500} placeholder="链接显示文字（可选）" className="h-8 min-w-0 flex-1 text-xs" />}
+      </div>
+    </div>
     <Button variant="ghost" size="sm" onClick={onRemove} className="icon-button text-destructive hover:text-destructive" aria-label="删除信息"><Icon icon="mdi:delete" className="h-4 w-4" /></Button>
   </div>
 }

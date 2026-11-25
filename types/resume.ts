@@ -3,6 +3,28 @@ export interface PersonalInfoItem {
   value: string
   icon?: string
   id: string
+  type?: "text" | "link"
+  linkTitle?: string
+}
+
+export interface PersonalInfoLayout {
+  mode: "inline" | "grid"
+  columns: 1 | 2 | 3 | 4 | 5 | 6
+  showLabels: boolean
+}
+
+export interface JobIntentionItem {
+  id: string
+  label: string
+  value: string
+}
+
+export interface ResumeContentRow {
+  id: string
+  type: "rich" | "tags"
+  columns: 1 | 2 | 3 | 4
+  cells: { id: string; content: string }[]
+  tags: string[]
 }
 
 export type ModuleContentMode = "markdown" | "rich-text"
@@ -13,6 +35,7 @@ export interface ResumeEntry {
   timeRange?: string
   content: string
   contentMode?: ModuleContentMode
+  rows?: ResumeContentRow[]
 }
 
 export interface ResumeModule extends ResumeEntry {
@@ -29,6 +52,9 @@ export interface ResumeData {
   modules: ResumeModule[]
   avatar?: string
   avatarShape?: "square" | "circle"
+  centerTitle?: boolean
+  personalInfoLayout?: PersonalInfoLayout
+  jobIntention?: { enabled: boolean; items: JobIntentionItem[] }
   createdAt: string
   updatedAt: string
 }

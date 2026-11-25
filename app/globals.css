@@ -210,6 +210,24 @@
     @apply text-sm font-medium text-muted-foreground;
   }
 
+  .resume-rich-editor {
+    min-height: 48px;
+    padding: 8px 10px;
+    outline: none;
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  .resume-rich-editor:focus { box-shadow: inset 0 0 0 1px var(--primary); }
+  .resume-rich-editor p { margin: 0 0 6px; }
+  .resume-rich-editor > :last-child { margin-bottom: 0; }
+  .resume-rich-editor ul { list-style: disc; padding-left: 20px; }
+  .resume-rich-editor ol { list-style: decimal; padding-left: 20px; }
+  .resume-rich-editor blockquote { border-left: 3px solid var(--border); padding-left: 12px; }
+  .resume-rich-editor a { color: #0369a1; text-decoration: underline; }
+  .resume-rich-editor pre { overflow-x: auto; white-space: pre-wrap; }
+  .resume-rich-editor p:only-child:empty::before { content: attr(data-placeholder); color: #94a3b8; }
+
   .icon-button {
     @apply inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-accent/10 transition-colors;
   }

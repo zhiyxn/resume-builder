@@ -7,6 +7,8 @@ import type {
 } from "@/types/resume"
 import { sanitizeHtml, sanitizeSvgBody, sanitizeUrl } from "@/lib/html-safety"
 import { getModuleEntries, normalizeResumeModules } from "@/lib/resume-modules"
+import { createContentRow } from "@/lib/content-rows"
+import { contentRowsSchema, personalInfoLayoutSchema, jobIntentionSchema } from "@/lib/content-schema"
 
 function normalizePersonalInfoItem(item: PersonalInfoItem): PersonalInfoItem {
   return {
@@ -14,6 +16,7 @@ function normalizePersonalInfoItem(item: PersonalInfoItem): PersonalInfoItem {
     label: item.label ?? "",
     value: item.value ?? "",
     icon: sanitizeSvgBody(item.icon),
+    ...(item.type === "link" ? { value: sanitizeUrl(item.value), linkTitle: item.linkTitle || "" } : {}),
   }
 }
 
@@ -27,6 +30,7 @@ function normalizeModules(modules: ResumeModule[]): ResumeModule[] {
       timeRange: entry.timeRange ?? "",
       content: entry.contentMode === "rich-text" ? sanitizeHtml(entry.content ?? "") : entry.content ?? "",
       contentMode: entry.contentMode === "rich-text" ? "rich-text" : "markdown",
+      ...(entry.rows ? { rows: contentRowsSchema.parse(entry.rows) } : {}),
     })),
   }))
 }
@@ -38,6 +42,7 @@ export function createNewEntry(): ResumeEntry {
     timeRange: "",
     content: "",
     contentMode: "markdown",
+    rows: [createContentRow(2), createContentRow(1)],
   }
 }
 
@@ -96,7 +101,7 @@ export function createBlankResumeData(): ResumeData {
 
 export function exportToMagicyanFile(resumeData: ResumeData): string {
   const payload: MagicyanFile = {
-    version: "1.2.0",
+    version: "1.3.0",
     data: {
       ...resumeData,
       avatar: sanitizeUrl(resumeData.avatar || "", { allowImages: true }),
@@ -107,7 +112,7 @@ export function exportToMagicyanFile(resumeData: ResumeData): string {
     },
     metadata: {
       exportedAt: new Date().toISOString(),
-      appVersion: "1.2.0",
+      appVersion: "1.3.0",
     },
   }
 
@@ -151,6 +156,8 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       if (!item.id || !item.label || typeof item.value !== "string") {
         throw new Error("个人信息项格式错误")
       }
+      if ((item.type !== undefined && !["text", "link"].includes(item.type)) ||
+        (item.linkTitle !== undefined && typeof item.linkTitle !== "string")) throw new Error("个人信息链接格式错误")
     }
 
     for (const module of data.modules) {
@@ -174,6 +181,9 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       avatarShape: data.avatarShape === "square" ? "square" : "circle",
       personalInfo: data.personalInfo.map(normalizePersonalInfoItem),
       modules: normalizeModules(data.modules),
+      ...(data.personalInfoLayout ? { personalInfoLayout: personalInfoLayoutSchema.parse(data.personalInfoLayout) } : {}),
+      ...(data.jobIntention ? { jobIntention: jobIntentionSchema.parse(data.jobIntention) } : {}),
+      centerTitle: data.centerTitle === true,
       createdAt: data.createdAt || now,
       updatedAt: now,
     }
@@ -233,6 +243,11 @@ export function validateResumeData(data: ResumeData): { isValid: boolean; errors
       if (module.entries !== undefined && (!Array.isArray(module.entries) || !module.entries.length)) {
         errors.push(`简历大块「${module.title || `第 ${index + 1} 项`}」至少需要一个子模块`)
       }
+      if (Array.isArray(module.entries)) {
+        for (const entry of module.entries) {
+          if (entry.rows && !contentRowsSchema.safeParse(entry.rows).success) errors.push("内容行格式错误")
+        }
+      }
     })
   }
 
@@ -257,7 +272,8 @@ export function getResumeSuggestions(data: ResumeData): string[] {
       suggestions.push(`简历大块第 ${index + 1} 项缺少标题或副标题`)
     }
     entries.forEach((entry, entryIndex) => {
-      if (!entry.content?.trim()) {
+      const hasRows = entry.rows?.some((row) => row.tags.some((tag) => tag.trim()) || row.cells.some((cell) => cell.content.replace(/<[^>]*>/g, "").trim()))
+      if (!entry.content?.trim() && !hasRows) {
         suggestions.push(`「${module.title || `大块 ${index + 1}`} / ${entry.subtitle || `子模块 ${entryIndex + 1}`}」尚未填写内容`)
       }
     })

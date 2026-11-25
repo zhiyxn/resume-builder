@@ -51,16 +51,17 @@ test("独立图标、首个无标题模块和显式分组保持边界", () => {
   assert.equal(groups[3].id, sameTitle.id)
 })
 
-test("现有示例可转换为四个大块并保留全部六条经历", () => {
+test("示例包含五个大块，经历使用自由排版并可通过服务端校验", () => {
   const data = importFromMagicyanFile(readFileSync(new URL("../public/demo.magicyan", import.meta.url), "utf8"))
-  assert.deepEqual(data.modules.map((group) => group.entries?.length), [1, 1, 2, 2])
-  assert.equal(data.modules[2].entries?.[1].subtitle, "万虫谷网络 | 初阶蛊修")
+  assert.deepEqual(data.modules.map((group) => group.entries?.length), [1, 1, 1, 2, 2])
+  assert.ok(data.modules.every(group => group.entries?.every(entry => entry.rows?.length)))
+  assert.equal(resumeSchema.safeParse(data).success, true)
 })
 
 test("源文件往返保留所有子模块、顺序、时间及两种正文模式", () => {
   const data = groupedResume()
   const raw = exportToMagicyanFile(data)
-  assert.equal(JSON.parse(raw).version, "1.2.0")
+  assert.equal(JSON.parse(raw).version, "1.3.0")
   assert.deepEqual(importFromMagicyanFile(raw).modules, data.modules)
   const reversed = { ...data, modules: [{ ...data.modules[0], entries: [...data.modules[0].entries!].reverse() }] }
   assert.deepEqual(importFromMagicyanFile(exportToMagicyanFile(reversed)).modules, reversed.modules)

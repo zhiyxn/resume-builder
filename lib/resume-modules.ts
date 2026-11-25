@@ -7,6 +7,7 @@ export function getModuleEntries(module: ResumeModule): ResumeEntry[] {
     timeRange: module.timeRange ?? "",
     content: module.content ?? "",
     contentMode: module.contentMode === "rich-text" ? "rich-text" : "markdown",
+    ...(module.rows ? { rows: module.rows } : {}),
   }]
 }
 
