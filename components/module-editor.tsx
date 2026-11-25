@@ -158,7 +158,7 @@ function ModuleGroupEditor({ module, isExpanded, dragHandleProps, onToggle, onUp
         <CollapsibleContent>
           <div className="space-y-4 border-t p-3 pt-4">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-              <div className="form-group">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor={`group-title-${module.id}`} className="form-label">大块标题</Label>
                 <Input id={`group-title-${module.id}`} value={module.title} maxLength={200}
                   onChange={(event) => onUpdate({ title: event.target.value })} placeholder="例如：教育经历、工作经历、项目经历" />
